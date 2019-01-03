@@ -89,7 +89,7 @@ $autoload['drivers'] = array();
 |
 |	$autoload['helper'] = array('url', 'file');
 */
-$autoload['helper'] = array('syntax_colour_helper', 'syntax_colour2_helper', 'syntax_colour3_helper', 'regular_expression_analyzer_helper', 'message_helper');
+$autoload['helper'] = array('token_presenter_helper', 'token_view_helper', 'token_helper', 'tokenizer_helper');
 
 /*
 | -------------------------------------------------------------------
