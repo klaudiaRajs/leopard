@@ -5,9 +5,12 @@
 class token{
     const SEMICOLON = 'semicolon';
     const DOUBLE_QUOTE = 'doubleQuote';
-    const SQUARE_BRACKET = 'squareBracket';
-    const CURLY_BRACKET = 'curlyBracket';
-    const BRACKET = 'bracket';
+    const SQUARE_BRACKET_OPEN = 'squareBracketOpen';
+    const SQUARE_BRACKET_CLOSE = 'squareBracketClose';
+    const CURLY_BRACKET_OPEN = 'curlyBracketOpen';
+    const CURLY_BRACKET_CLOSE = 'curlyBracketClose';
+    const BRACKET_OPEN = 'bracketOpen';
+    const BRACKET_CLOSE = 'bracketClose';
     const ASSIGNMENT = '=';
     const EXCLAMATION_MARK = '!';
     const DOT = '.';
