@@ -12,7 +12,7 @@ class TokenPresenter{
         $lastLine = 1;
         $tokensForLine = [];
         foreach ($tokens as $token) {
-            if ($token->tokenIdx == T_WHITESPACE && preg_match('/[\n]+/', $token->content)) {
+            if ($token->tokenIdentifier == T_WHITESPACE && preg_match('/[\n]+/', $token->content)) {
                 if (!empty($tokensForLine)) {
                     $result .= self::getFormattedLine($token->lineNumber, $tokensForLine);
                     $lastLine = $token->lineNumber;
@@ -49,7 +49,7 @@ class TokenPresenter{
                         continue;
                     }
                     //if this is first iteration there may be already something for this line so we just include the next token
-                    $tokensForLine[] = new TokenView($token->tokenIdx, $lineContent, $token->tokenName, $token->tokenMessage);
+                    $tokensForLine[] = new TokenView($token->tokenIdentifier, $lineContent, $token->tokenName, $token->tokenMessage);
                     $result .= self::getFormattedLine($token->lineNumber + $lineNumber, $tokensForLine);
                     $lastLine = $token->lineNumber + $lineNumber;
                     $tokensForLine = [];
@@ -62,10 +62,13 @@ class TokenPresenter{
         if (!empty($tokensForLine)) {
             $result .= self::getFormattedLine($lastLine + 1, $tokensForLine);
         }
+
+        //var_dump(tokenizer::longestRepeatedSubstring(strip_tags($result), 50));
+
         return $result;
     }
 
-    static private function getFormattedLine($lineNumber, array $tokens)
+    static public function getFormattedLine($lineNumber, array $tokens)
     {
         $lineNumberFormat = '<span style="color:#a6a6a6; padding-right: 10px; border-right: 1px solid gray; margin-right: 5px;">%s</span>';
         $formattedLineNumber = sprintf($lineNumberFormat, str_pad($lineNumber, 3, ' ', STR_PAD_LEFT));
@@ -132,7 +135,7 @@ class TokenPresenter{
         }
         if ($token->tokenMessage){
             $style[] = "border-bottom: 1px solid red";
-            $style[] = "font-size: 1.2em";
+            $style[] = "font-size: 1.1em";
         }
 
         $name = $token->tokenName;

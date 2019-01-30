@@ -1,7 +1,5 @@
 <?php
 
-
-
 class token{
     const SEMICOLON = 'semicolon';
     const DOUBLE_QUOTE = 'doubleQuote';
@@ -18,18 +16,26 @@ class token{
     const QUESTION_MARK = '?';
     const COLON = ':';
 
-    public $tokenIdx;
+	public $tokenHash;
+    public $tokenIdentifier;
     public $content;
     public $lineNumber;
     public $tokenName;
     public $tokenMessage;
+    public $tokenKey;
+    public $partOfClass;
+	public $partOfFunction;
 
-    public function __construct($tokenIdx, $content, $lineNumber, $tokenName, $tokenMessage)
+	public function __construct($tokenHash, $tokenIdentifier, $content, $lineNumber, $tokenName, $tokenMessage, $tokenKey, $partOfClass = null, $partOfFunction = null)
     {
-        $this->tokenIdx = $tokenIdx;
+    	$this->tokenHash = $tokenHash;
+        $this->tokenIdentifier = $tokenIdentifier;
         $this->content = $content;
         $this->lineNumber = $lineNumber;
         $this->tokenName = $tokenName;
         $this->tokenMessage = $tokenMessage;
+        $this->tokenKey = $tokenKey;
+        $this->partOfClass = $partOfClass;
+        $this->partOfFunction = $partOfFunction;
     }
 }

@@ -2,8 +2,32 @@
 
 
 class rules_helper{
+	const MAX_PARAMS = 5;
+	const FUNCTION_LENGTH = 10;
+	const CLASS_LENGTH = 30;
+	const LINE_LENGTH = 120;
+	const REPEATED_STRING_THRESHOLD = 10;
 
-    public static function deprecated()
+	const METHOD_DEPRECATED_WITH_SUGGEST_WARNING = "This method is deprecated. Suggested: ";
+	const METHOD_DEPRECATED_WARNING = "This method is deprecated. ";
+	const GLOBALS_WARNING = "Shouldn't use global variables. ";
+	const STATIC_WARNING = "Shouldn't use statics if it's not absolutely necessary. ";
+	const UNUSED_VARIABLE_WARNING = "This is unused variables. ";
+	const TOO_LENGTHY_STRUCTURE = "This structure is too long. ";
+	const TOO_LONG_LINE = "This line is too long. ";
+	const STRUCTURE_CONTAINS_TOO_LONG_LINE = "This structure contains too long of a line. ";
+	const UNUSED_METHOD_WARNING = "This method seems not to be used. ";
+	const REPEATED_CHUNK_OF_CODE_WARNING = "This is repeated chunk of code. Try to abstract it out to function. ";
+	const TOO_MANY_PARAMS_WARNING = "This function has too many params. ";
+	const CAMEL_CASE_WARNING = "You should use camelCase. ";
+	const PASCAL_CONVENTION_WARNING = "You should use PascalCase convention. ";
+	const UNDERSCORE_CONVENTION_WARNING = "You should use underscore convention. ";
+
+	const TOKENS_CONTAINING_NAMING = [
+		'T_STRING', 'T_VARIABLE'
+	];
+
+	public static function deprecated()
     {
         return [
             'call_user_method' => 'call_user_func()',
@@ -39,4 +63,22 @@ class rules_helper{
     public static function globals(){
         return ['$_SESSION', '$_POST', '$_GET', '$_FILES', '$_SERVER', '$_COOKIE', '$_ENV', '$_REQUEST', '$GLOBALS'];
     }
+
+    public static function nameConvention(){
+//    	return 'camelCase';
+//    	return 'Pascal';
+		return 'underscore';
+	}
+
+	public static function keyNames(){
+    	return [
+    		'__construct', 'self', 'false', 'true', 'null', '$this'
+		];
+	}
+
+	public static function reservedVariableNames(){
+    	return [
+    		'$this'
+		];
+	}
 }
