@@ -65,9 +65,9 @@ class rules_helper{
     }
 
     public static function nameConvention(){
-//    	return 'camelCase';
+    	return 'camelCase';
 //    	return 'Pascal';
-		return 'underscore';
+//		return 'underscore';
 	}
 
 	public static function keyNames(){

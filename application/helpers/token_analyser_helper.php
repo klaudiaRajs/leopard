@@ -119,6 +119,17 @@ class tokenAnalyser {
 	}
 
 	private static function checkIfCamelCaseConventionFollowed($token) {
-		return (strpos($token->content, '_') === false);
+		if (in_array($token->tokenName, rules_helper::TOKENS_CONTAINING_NAMING)) {
+			$word = str_replace('$', '', $token->content);
+			if (strpos($token->content, '_') !== false) {
+				return false;
+			}
+			$firstCharacter = mb_substr($word, 0, 1, "UTF-8");
+
+			if (!ctype_lower($firstCharacter)) {
+				return false;
+			}
+		}
+		return true;
 	}
 }
