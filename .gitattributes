@@ -1,1 +1,4 @@
-system/ *linguist-vendored
+system/* linguist-vendored
+uploads/* linguist-vendored
+user_guide/* linguist-vendored
+tests/* linguist-vendored
