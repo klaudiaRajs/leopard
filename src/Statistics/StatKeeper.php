@@ -1,7 +1,7 @@
 <?php
 
 
-namespace MyApp\Stats;
+namespace MyApp\Statistics;
 
 
 class StatKeeper{

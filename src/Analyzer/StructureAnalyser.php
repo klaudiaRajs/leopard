@@ -2,7 +2,7 @@
 
 namespace MyApp\Analyzer;
 
-use MyApp\Stats\StatKeeper;
+use MyApp\Statistics\StatKeeper;
 
 class StructureAnalyser{
 
