@@ -14,13 +14,6 @@ require __DIR__ . '/../vendor/autoload.php';
 
 $app = new Silex\Application();
 
-//@TODO delete this part after testing
-$files = glob(__DIR__ . "/../stats/*"); // get all file names
-foreach ($files as $file) { // iterate files
-    if (is_file($file))
-        unlink($file); // delete file
-}
-
 $app->register(new FormServiceProvider());
 $app->register(new Silex\Provider\LocaleServiceProvider());
 $app->register(new Silex\Provider\ValidatorServiceProvider());
@@ -67,8 +60,20 @@ $app->get('/analyzeUpload', function(Request $request) use ($app){
     $fileAnalyzer = new FileAnalyzer();
 
     $result = processRequest($requestFields, $result, $fileAnalyzer);
+    $result .= $fileAnalyzer->analyzeResults();
     return $result;
 })->bind('analyzeUpload');
+
+$app->get('/addFile', function() use ($app){
+    return ViewRenderer::render('FileUploader');
+});
+
+$app->error(function(\Exception $e, Request $request, $code){
+    echo 'We are sorry, but something went terribly wrong.<br/>';
+    echo 'Code: ' . $code . '<br/>';
+    echo '<pre>';
+    print_r($e);
+});
 
 function processRequest($requestFields, $result, $fileAnalyzer){
     $statKeeper = new StatKeeper();
@@ -85,19 +90,8 @@ function processRequest($requestFields, $result, $fileAnalyzer){
             $result .= $fileAnalyzer->analyzeUpload($file, $formField['introducedProblems'], $statKeeper);
         }
     }
-    $statKeeper->saveProgress();
+    $fileAnalyzer->statResultFilePath = $statKeeper->saveProgress();
     return $result;
 }
-
-$app->get('/addFile', function() use ($app){
-    return ViewRenderer::render('FileUploader');
-});
-
-$app->error(function(\Exception $e, Request $request, $code){
-    echo 'We are sorry, but something went terribly wrong.<br/>';
-    echo 'Code: ' . $code . '<br/>';
-    echo '<pre>';
-    print_r($e);
-});
 
 $app->run();
