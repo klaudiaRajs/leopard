@@ -10,9 +10,9 @@ class Tokenizer {
 	private $statKeeper;
 	private $fileName;
 
-	public function __construct($fileContents, $fileName) {
+	public function __construct($fileContents, $fileName, StatKeeper $statKeeper) {
 		$unifiedContents = str_replace("\r", '', $fileContents);
-		$this->statKeeper = new StatKeeper();
+		$this->statKeeper = $statKeeper;
 		$this->fileName = $fileName;
 		$this->parse($unifiedContents);
 	}
@@ -87,7 +87,6 @@ class Tokenizer {
         $tokens = $structureAnalyzer->findUnusedMethods($tokens);
 		//@TODO check what is appropriate length of a structure
 
-        $this->statKeeper->saveProgress();
 		return $tokens;
 	}
 }

@@ -2,14 +2,15 @@
 
 namespace MyApp\Controller;
 
+use MyApp\Statistics\StatKeeper;
 use MyApp\View\ViewRenderer;
 use MyApp\Analyzer\Tokenizer;
 use MyApp\Analyzer\TokenPresenter;
 
 class FileAnalyzer{
-    public function analyzeUpload($fileName, int $introduceProblems){
+    public function analyzeUpload($fileName, int $introduceProblems, StatKeeper $statKeeper){
         $fileContents = file_get_contents(__DIR__ . "/../../upload/" . $fileName);
-        $tokenizer = new Tokenizer($fileContents, $fileName);
+        $tokenizer = new Tokenizer($fileContents, $fileName, $statKeeper);
 
         $tokens = $tokenizer->getAll();
 

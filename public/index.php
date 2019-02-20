@@ -2,6 +2,7 @@
 
 use MyApp\Analyzer\Rules;
 use MyApp\Controller\FileAnalyzer;
+use MyApp\Statistics\StatKeeper;
 use MyApp\View\ViewRenderer;
 use Silex\Provider\FormServiceProvider;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -70,19 +71,21 @@ $app->get('/analyzeUpload', function(Request $request) use ($app){
 })->bind('analyzeUpload');
 
 function processRequest($requestFields, $result, $fileAnalyzer){
+    $statKeeper = new StatKeeper();
     if (isset($requestFields['convention'])) {
         Rules::setNamingConvention($requestFields['convention']);
         $file = $requestFields['file'];
-        $result .= $fileAnalyzer->analyzeUpload($file, $requestFields['introducedProblems']);
+        $result .= $fileAnalyzer->analyzeUpload($file, $requestFields['introducedProblems'], $statKeeper);
     }
 
     foreach ($requestFields as $key => $formField) {
         if (is_int($key)) {
             Rules::setNamingConvention($formField['convention']);
             $file = $formField['file'];
-            $result .= $fileAnalyzer->analyzeUpload($file, $formField['introducedProblems']);
+            $result .= $fileAnalyzer->analyzeUpload($file, $formField['introducedProblems'], $statKeeper);
         }
     }
+    $statKeeper->saveProgress();
     return $result;
 }
 
