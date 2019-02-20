@@ -42,11 +42,18 @@ class TokenAnalyser{
     }
 
     public function containsGlobal($token){
-        if ($token->tokenIdentifier == T_VARIABLE && in_array($token->content, Rules::globals())) {
+        if ($this->ifContainsGlobal($token)) {
             $this->statKeeper->addProgress($this->fileName, 1, $this->introduceProblems);
             return Rules::GLOBALS_WARNING;
         }
         return null;
+    }
+
+    private function ifContainsGlobal($token){
+        if($token->tokenIdentifier == T_VARIABLE && in_array($token->content, Rules::globals())){
+            return true;
+        }
+        return false;
     }
 
     public function containsUnusedVariables($key, $token_, $tokens){
@@ -54,7 +61,7 @@ class TokenAnalyser{
         if ($token_->tokenIdentifier == T_VARIABLE && in_array($token_->content, Rules::reservedVariableNames())) {
             return $message;
         }
-        if ($token_->tokenIdentifier == T_VARIABLE && self::containsGlobal($token_) == null) {
+        if ($token_->tokenIdentifier == T_VARIABLE && $this->ifContainsGlobal($token_) == null) {
             $variable = $token_->content;
             foreach ($tokens as $tokenKey => $token) {
                 $message = Rules::UNUSED_VARIABLE_WARNING;
@@ -112,7 +119,7 @@ class TokenAnalyser{
             return null;
         }
 
-        if ($this->isNative($token) || $this->containsGlobal($token) || $token->tokenIdentifier == T_CONSTANT_ENCAPSED_STRING || $token->tokenIdentifier == T_DOC_COMMENT || $token->tokenIdentifier == T_COMMENT) {
+        if ($this->isNative($token) || $this->ifContainsGlobal($token) || $token->tokenIdentifier == T_CONSTANT_ENCAPSED_STRING || $token->tokenIdentifier == T_DOC_COMMENT || $token->tokenIdentifier == T_COMMENT) {
             return null;
         }
         if (Rules::nameConvention() == 'camelCase') {
