@@ -1,7 +1,6 @@
 <?php
 
 use MyApp\Analyzer\Rules;
-use MyApp\Stats\StatKeeper;
 use MyApp\Controller\FileAnalyzer;
 use MyApp\View\ViewRenderer;
 use Silex\Provider\FormServiceProvider;
@@ -64,7 +63,6 @@ $app->get('/analyzeUpload', function(Request $request) use ($app){
     $result = '';
     $requestFields = $request->query->get('form');
 
-//    Rules::setNamingConvention($request->query->get('form')['convention']);
     $fileAnalyzer = new FileAnalyzer();
 
     $result = processRequest($requestFields, $result, $fileAnalyzer);
@@ -87,14 +85,6 @@ function processRequest($requestFields, $result, $fileAnalyzer){
     }
     return $result;
 }
-
-$app->get('/saveStatsTesting', function() use ($app){
-    $statKeeps = new StatKeeper();
-    $statKeeps->addProgress('test.php', 2, 1);
-    $file = $statKeeps->saveProgress();
-
-    return file_get_contents($file);
-});
 
 $app->get('/addFile', function() use ($app){
     return ViewRenderer::render('FileUploader');
