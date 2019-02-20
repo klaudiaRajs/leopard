@@ -10,6 +10,7 @@ class Rules {
 	const CLASS_LENGTH = 30;
 	const LINE_LENGTH = 120;
 	const REPEATED_STRING_THRESHOLD = 10;
+	const LOOP_LENGTH = 50;
 
 	const METHOD_DEPRECATED_WITH_SUGGEST_WARNING = "This method is deprecated. Suggested: ";
 	const METHOD_DEPRECATED_WARNING = "This method is deprecated. ";

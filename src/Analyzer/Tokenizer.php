@@ -66,8 +66,8 @@ class Tokenizer {
 	    $tokenAnalyzer = new TokenAnalyser($this->statKeeper, $this->fileName, $introducedProblems);
 	    $structureAnalyzer = new StructureAnalyser($this->statKeeper, $this->fileName, $introducedProblems);
 
-        $tokens = $structureAnalyzer->isTooLongStructure($tokens, 'T_FOREACH', 50);
-        $tokens = $structureAnalyzer->isTooLongStructure($tokens, 'T_FOR', 50);
+        $tokens = $structureAnalyzer->isTooLongStructure($tokens, 'T_FOREACH', Rules::LOOP_LENGTH);
+        $tokens = $structureAnalyzer->isTooLongStructure($tokens, 'T_FOR', Rules::LOOP_LENGTH);
 
 		for ($i = 0; $i < count($tokens); $i++){
 			$tokens[$i]->tokenMessage .= $tokenAnalyzer->containsStatics($tokens[$i]);
