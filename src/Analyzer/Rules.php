@@ -18,7 +18,6 @@ class Rules {
 	const UNUSED_VARIABLE_WARNING = "This is unused variables. ";
 	const TOO_LENGTHY_STRUCTURE = "This structure is too long. ";
 	const TOO_LONG_LINE = "This line is too long. ";
-	const STRUCTURE_CONTAINS_TOO_LONG_LINE = "This structure contains too long of a line. ";
 	const UNUSED_METHOD_WARNING = "This method seems not to be used. ";
 	const REPEATED_CHUNK_OF_CODE_WARNING = "This is repeated chunk of code. Try to abstract it out to function. ";
 	const TOO_MANY_PARAMS_WARNING = "This function has too many params. ";

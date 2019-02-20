@@ -81,9 +81,13 @@ class StructureAnalyser{
             if ($token->tokenIdentifier == T_WHITESPACE && preg_match('/[\n]+/', $token->content)) {
                 if (!empty($tokensForLine)) {
                     if ($this->isLineTooLong($tokensForLine, $maxLineLength)) {
+                        $errorMarked = false;
                         foreach ($tokensForLine as $token_) {
                             $tokens[$token_->tokenKey]->tokenMessage .= Rules::TOO_LONG_LINE;
-                            $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
+                            if (!$errorMarked) {
+                                $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
+                                $errorMarked = true;
+                            }
                         }
                     }
                     $tokensForLine = [];
@@ -117,10 +121,6 @@ class StructureAnalyser{
                     }
                     //if this is first iteration there may be already something for this line so we just include the next token
                     $tokensForLine[] = new TokenView($token->tokenIdentifier, $lineContent, $token->tokenName, $token->tokenMessage, $token->tokenKey);
-                    if (strlen(strip_tags($lineContent)) > $maxLineLength) {
-                        $tokens[$key]->tokenMessage .= Rules::STRUCTURE_CONTAINS_TOO_LONG_LINE;
-                        $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
-                    }
                     $tokensForLine = [];
                 }
                 continue;
@@ -137,10 +137,15 @@ class StructureAnalyser{
                 $functionNameFound = false;
                 for ($j = $i + 1; $j < count($tokens); $j++) {
                     if ($tokens[$j]->tokenIdentifier == T_STRING) {
+                        $errorMarked = false;
                         for ($h = $j + 1; $h < count($tokens); $h++) {
                             if ($tokens[$h]->tokenName == 'bracketOpen') {
-                                $tokens[$j]->tokenMessage .= $this->checkIfFunctionUsed($tokens, $j);
-                                $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
+                                $errorMessage = $this->checkIfFunctionUsed($tokens, $j);
+                                $tokens[$j]->tokenMessage .= $errorMessage;
+                                if( $errorMessage && !$errorMarked ){
+                                    $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
+                                    $errorMarked = true;
+                                }
                                 $functionNameFound = true;
                                 break;
                             }
@@ -195,11 +200,14 @@ class StructureAnalyser{
                     $highest = $token->tokenHash;
                 }
             }
-
+            $errorMarked = false;
             foreach ($tokens as $token) {
                 if ($token->tokenHash >= $lowest && $token->tokenHash <= $highest) {
                     $token->tokenMessage .= Rules::REPEATED_CHUNK_OF_CODE_WARNING;
-                    $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
+                    if (!$errorMarked) {
+                        $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
+                        $errorMarked = true;
+                    }
                 }
             }
         }
@@ -245,9 +253,13 @@ class StructureAnalyser{
             }
         }
         if ($params >= Rules::MAX_PARAMS) {
+            $errorMarked = false;
             for ($i = $h; $i <= $k; $i++) {
                 $tokens[$i]->tokenMessage .= Rules::TOO_MANY_PARAMS_WARNING;
-                $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
+                if (!$errorMarked) {
+                    $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
+                    $errorMarked = true;
+                }
             }
         }
     }
