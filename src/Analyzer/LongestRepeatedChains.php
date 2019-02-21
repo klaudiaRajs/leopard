@@ -4,7 +4,7 @@ namespace MyApp\Analyzer;
 
 class LongestRepeatedChains
 {
-	//Implementation of suffix tree - code repetiton detection
+	//Implementation of suffix tree - code repetition detection
 	public function findAll(array $tokens, $threshold)
 	{
 		if (empty($tokens)) {
@@ -12,7 +12,7 @@ class LongestRepeatedChains
 		}
 
 		$repeatedTokens = [];
-		$unifiedTokens = self::getTokensWithoutWhiteSpacesAndComments($tokens);
+		$unifiedTokens = $this->getTokensWithoutWhiteSpacesAndComments($tokens);
 		$sortedSignificantTokens = $this->getSuffixTree($unifiedTokens);
 		$securityCountdown = 9999;
 		do {
@@ -58,7 +58,7 @@ class LongestRepeatedChains
 
 		$result = [];
 		for ($i = 0; $i < $count - 1; $i++) {
-			$longestCommonChain = self::longestCommonChain($tokens[$i], $tokens[$i + 1]);
+			$longestCommonChain = $this->longestCommonChain($tokens[$i], $tokens[$i + 1]);
 			if (!empty($longestCommonChain) && count($longestCommonChain) > $threshold && count($result) < count($longestCommonChain)) {
 				$result = $longestCommonChain;
 			}
