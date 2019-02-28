@@ -20,6 +20,8 @@ class Token {
     const SMALLER = '<';
     const BIGGER = '>';
     const DIVISION = '/';
+    const ADD = '+';
+    const MULTIPLICATION = '*';
 
 	public $tokenHash;
     public $tokenIdentifier;
