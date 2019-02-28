@@ -83,31 +83,34 @@ class TokenAnalyser{
         return $message;
     }
 
-    private function ifNameExcludedFromCheck($token, $tokens, $i, int $exlusion){
-        $exlusionTokenPosition = $i;
+    private function ifNameExcludedFromCheck($token, $tokens, $i, int $exclusion){
+        $exclusionTokenPosition = $i;
         if ($token->tokenIdentifier == T_STRING) {
             for ($j = 2; $j >= 0; $j--) {
-                if ($exlusionTokenPosition <= 1) {
+                if ($exclusionTokenPosition <= 1) {
                     continue;
                 }
-                if ($tokens[$exlusionTokenPosition - 1]->tokenIdentifier == $exlusion) {
-                    $exlusionTokenPosition--;
+                if ($tokens[$exclusionTokenPosition - 1]->tokenIdentifier == $exclusion) {
+                    $exclusionTokenPosition--;
                     continue;
                 }
-                if ($tokens[$exlusionTokenPosition]->tokenIdentifier == $exlusion) {
-                    if ($exlusion == T_CONST) {
+                if ($tokens[$exclusionTokenPosition]->tokenIdentifier == $exclusion) {
+                    if ($exclusion == T_CONST) {
                         $this->checkIfConstNamingConventionFollowed($tokens, $i);
+                    }
+                    if( $exclusion == T_FUNCTION ){
+                        $this->checkIfFunctionFollowsNamingConvention($tokens, $i);
                     }
                     return true;
                 }
-                if ($tokens[$exlusionTokenPosition - 1]->tokenIdentifier == T_WHITESPACE) {
-                    $exlusionTokenPosition--;
+                if ($tokens[$exclusionTokenPosition - 1]->tokenIdentifier == T_WHITESPACE) {
+                    $exclusionTokenPosition--;
                     continue;
                 }
-                if ($tokens[$exlusionTokenPosition - 1]->tokenIdentifier == T_NS_SEPARATOR) {
+                if ($tokens[$exclusionTokenPosition - 1]->tokenIdentifier == T_NS_SEPARATOR) {
                     return true;
                 }
-                $exlusionTokenPosition--;
+                $exclusionTokenPosition--;
             }
         }
         return false;
@@ -115,7 +118,14 @@ class TokenAnalyser{
 
     public function checkIfNamingConventionFollowed($token, $tokens, $i){
 
-        if ($this->ifNameExcludedFromCheck($token, $tokens, $i, T_NAMESPACE) || $this->ifNameExcludedFromCheck($token, $tokens, $i, T_CLASS) || $this->ifNameExcludedFromCheck($token, $tokens, $i, T_CONST)) {
+        if ($this->ifNameExcludedFromCheck($token, $tokens, $i, T_NAMESPACE)
+            || $this->ifNameExcludedFromCheck($token, $tokens, $i, T_CLASS)
+            || $this->ifNameExcludedFromCheck($token, $tokens, $i, T_CONST)
+            || $this->ifNameExcludedFromCheck($token, $tokens, $i, T_FUNCTION)) {
+            return null;
+        }
+
+        if( isset($tokens[$i+1]) && $this->resembleStaticObjectCall($tokens[$i], $tokens[$i+1]) ){
             return null;
         }
 
@@ -123,7 +133,7 @@ class TokenAnalyser{
             return null;
         }
         if (Rules::nameConvention() == 'camelCase') {
-            if (self::checkIfCamelCaseConventionFollowed($token)) {
+            if ($this->checkIfCamelCaseConventionFollowed($token)) {
                 return null;
             }
             $this->statKeeper->addProgress($this->fileName, 1, $this->introduceProblems);
@@ -193,6 +203,9 @@ class TokenAnalyser{
     private function checkIfCamelCaseConventionFollowed($token){
         if (in_array($token->tokenName, Rules::TOKENS_CONTAINING_NAMING)) {
             $word = str_replace('$', '', $token->content);
+            if( $this->resembleConstant($token)) {
+                return true;
+            }
             if (strpos($token->content, '_') !== false) {
                 return false;
             }
@@ -203,6 +216,10 @@ class TokenAnalyser{
             }
         }
         return true;
+    }
+
+    private function resembleConstant($token){
+        return mb_strtoupper($token->content)  == $token->content ? true : false ;
     }
 
     public function checkIfNotSingleLetterVariable($token){
@@ -217,5 +234,15 @@ class TokenAnalyser{
         if( strtoupper($tokens[$i]->content) != $tokens[$i]->content ){
             $tokens[$i]->tokenMessage .= Rules::CONST_NAMING_CONVENTION_WARNING;
         }
+    }
+
+    private function checkIfFunctionFollowsNamingConvention($tokens, $i){
+        if( !$this->checkIfCamelCaseConventionFollowed($tokens[$i]) ){
+            $tokens[$i]->tokenMessage .= Rules::METHOD_NAMING_CONVENTION;
+        }
+    }
+
+    private function resembleStaticObjectCall(Token $stringToken, Token $nextToken){
+        return $stringToken->tokenIdentifier == T_STRING && $nextToken->tokenIdentifier == T_DOUBLE_COLON ? true : false;
     }
 }
