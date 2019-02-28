@@ -66,6 +66,9 @@ class StructureAnalyser{
             $curlyBracketClose = 0;
         }
         foreach ($functionMetadata as $data) {
+            if (isset($data['T_FUNCTION'])) {
+                $tokens[$data['i']]->partOfFunction = $data['T_FUNCTION'];
+            }
             if ($data['end'] - $data['start'] > $length) {
                 $tokens[$data['i']]->tokenMessage .= Rules::TOO_LENGTHY_STRUCTURE;
                 $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
