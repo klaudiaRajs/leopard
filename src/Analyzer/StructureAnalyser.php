@@ -21,6 +21,7 @@ class StructureAnalyser{
         $curlyBracketOpen = 0;
         $curlyBracketClose = 0;
         $counter = 0;
+
         for ($i = 0; $i < count($tokens); $i++) {
             if ($tokens[$i]->tokenName == $type) {
                 if ($type == 'T_FOREACH') {
@@ -37,18 +38,9 @@ class StructureAnalyser{
                     if ($tokens[$j]->tokenIdentifier == T_STRING && !isset($functionMetadata[$counter][$type])) {
                         $functionMetadata[$counter][$type] = $tokens[$j]->content;
                     }
-                    if ($type == 'T_FUNCTION') {
-                        $tokens[$j]->partOfFunction = isset($functionMetadata[$counter][$type]) ? $functionMetadata[$counter][$type] : null;
-                    }
-                    if ($type == 'T_CLASS') {
-                        $tokens[$j]->partOfClass = isset($functionMetadata[$counter][$type]) ? $functionMetadata[$counter][$type] : null;
-                    }
-                    if ($type == 'T_FOREACH') {
-                        $tokens[$j]->partOfForeach = isset($functionMetadata[$counter][$type]) ? $functionMetadata[$counter][$type] : null;
-                    }
-                    if ($type == 'T_FOR') {
-                        $tokens[$j]->partOfFor = isset($functionMetadata[$counter][$type]) ? $functionMetadata[$counter][$type] : null;
-                    }
+
+                    $tokens = $this->markAsPartOfStructure($j, $tokens, $type, $functionMetadata, $counter);
+
                     if ($tokens[$j]->tokenName == Token::CURLY_BRACKET_OPEN) {
                         $curlyBracketOpen++;
                     }
@@ -65,6 +57,11 @@ class StructureAnalyser{
             $curlyBracketOpen = 0;
             $curlyBracketClose = 0;
         }
+        $tokens = $this->markTokensAndProgress($functionMetadata, $tokens, $length);
+        return $tokens;
+    }
+
+    private function markTokensAndProgress($functionMetadata, $tokens, $length){
         foreach ($functionMetadata as $data) {
             if (isset($data['T_FUNCTION'])) {
                 $tokens[$data['i']]->partOfFunction = $data['T_FUNCTION'];
@@ -73,6 +70,22 @@ class StructureAnalyser{
                 $tokens[$data['i']]->tokenMessage .= Rules::TOO_LENGTHY_STRUCTURE;
                 $this->statKeeper->addProgress($this->fileName, 1, $this->introducedProblems);
             }
+        }
+        return $tokens;
+    }
+
+    private function markAsPartOfStructure($j, $tokens, $type, $functionMetadata, $counter){
+        if ($type == 'T_FUNCTION') {
+            $tokens[$j]->partOfFunction = isset($functionMetadata[$counter][$type]) ? $functionMetadata[$counter][$type] : null;
+        }
+        if ($type == 'T_CLASS') {
+            $tokens[$j]->partOfClass = isset($functionMetadata[$counter][$type]) ? $functionMetadata[$counter][$type] : null;
+        }
+        if ($type == 'T_FOREACH') {
+            $tokens[$j]->partOfForeach = isset($functionMetadata[$counter][$type]) ? $functionMetadata[$counter][$type] : null;
+        }
+        if ($type == 'T_FOR') {
+            $tokens[$j]->partOfFor = isset($functionMetadata[$counter][$type]) ? $functionMetadata[$counter][$type] : null;
         }
         return $tokens;
     }
@@ -215,6 +228,12 @@ class StructureAnalyser{
             }
         }
         return $tokens;
+    }
+
+    public function identifyFunctionSimilarities($tokens){
+        $similarFunctionAnalyzer = new FunctionSimilarityAnalyser();
+
+        return $similarFunctionAnalyzer->checkFunctionStringSimilarity($tokens, $this->statKeeper);
     }
 
     private function checkIfFunctionUsed($tokens, $tokenIndexOfFunctionName){

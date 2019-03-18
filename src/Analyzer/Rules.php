@@ -5,12 +5,13 @@ namespace MyApp\Analyzer;
 class Rules {
     private static $convention;
 
-	const MAX_PARAMS = 5;
-	const FUNCTION_LENGTH = 10;
-	const CLASS_LENGTH = 30;
-	const LINE_LENGTH = 120;
+	const MAX_PARAMS = 3;
+	const FUNCTION_LENGTH = 30;
+	const CLASS_LENGTH = 250;
+	const LINE_LENGTH = 150;
 	const REPEATED_STRING_THRESHOLD = 10;
 	const LOOP_LENGTH = 50;
+	const SIMILARITY_THRESHOLD = 30;
 
 	const METHOD_DEPRECATED_WITH_SUGGEST_WARNING = "This method is deprecated. Suggested: ";
 	const METHOD_DEPRECATED_WARNING = "This method is deprecated. ";
@@ -27,6 +28,8 @@ class Rules {
 	const UNDERSCORE_CONVENTION_WARNING = "You should use underscore convention. ";
 	const SINGLE_LETTER_VARIABLE_WARNING = "Single letter variable names might mean unclear name, ensure the name conveys the intention. ";
     const CONST_NAMING_CONVENTION_WARNING = "It is recommended to call constants with all capital letters.";
+    const SIMILAR_CHUNK_OF_CODE_WARNING = "Similarity with: ";
+    const METHOD_NAMING_CONVENTION = "Method should follow PSR-1, which for method names uses camelCase. ";
 
 	const TOKENS_CONTAINING_NAMING = [
 		'T_STRING', 'T_VARIABLE'

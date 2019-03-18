@@ -22,6 +22,8 @@ class Token {
     const DIVISION = '/';
     const ADD = '+';
     const MULTIPLICATION = '*';
+    const MINUS = '-';
+    const AMPERSAND = '&';
 
 	public $tokenHash;
     public $tokenIdentifier;

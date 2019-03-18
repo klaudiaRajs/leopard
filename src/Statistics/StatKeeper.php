@@ -32,4 +32,10 @@ class StatKeeper{
         file_put_contents($fileWithPath, json_encode($this->stats));
         return $fileWithPath;
     }
+
+    public function saveSimilarity($similarityResults){
+        $fileWithPath = __DIR__ . "/../../stats/similarity-" . date('Ymdhis');
+        file_put_contents($fileWithPath, json_encode($similarityResults));
+        return $fileWithPath;
+    }
 }
