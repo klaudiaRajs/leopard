@@ -233,7 +233,7 @@ class StructureAnalyser{
     public function identifyFunctionSimilarities($tokens){
         $similarFunctionAnalyzer = new FunctionSimilarityAnalyser();
 
-        return $similarFunctionAnalyzer->checkFunctionStringSimilarity($tokens, $this->statKeeper);
+        return $similarFunctionAnalyzer->checkFunctionStringSimilarity($tokens, $this->statKeeper, $this->fileName);
     }
 
     private function checkIfFunctionUsed($tokens, $tokenIndexOfFunctionName){

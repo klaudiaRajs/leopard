@@ -50,7 +50,7 @@ class TokenAnalyser{
     }
 
     private function ifContainsGlobal($token){
-        if($token->tokenIdentifier == T_VARIABLE && in_array($token->content, Rules::globals())){
+        if ($token->tokenIdentifier == T_VARIABLE && in_array($token->content, Rules::globals())) {
             return true;
         }
         return false;
@@ -98,7 +98,7 @@ class TokenAnalyser{
                     if ($exclusion == T_CONST) {
                         $this->checkIfConstNamingConventionFollowed($tokens, $i);
                     }
-                    if( $exclusion == T_FUNCTION ){
+                    if ($exclusion == T_FUNCTION) {
                         $this->checkIfFunctionFollowsNamingConvention($tokens, $i);
                     }
                     return true;
@@ -125,7 +125,11 @@ class TokenAnalyser{
             return null;
         }
 
-        if( isset($tokens[$i+1]) && $this->resembleStaticObjectCall($tokens[$i], $tokens[$i+1]) ){
+        if (isset($tokens[$i + 1]) && $this->resembleStaticObjectCall($tokens[$i], $tokens[$i + 1])) {
+            return null;
+        }
+
+        if ($this->isObjectCall($tokens, $token, $i)) {
             return null;
         }
 
@@ -203,7 +207,7 @@ class TokenAnalyser{
     private function checkIfCamelCaseConventionFollowed($token){
         if (in_array($token->tokenName, Rules::TOKENS_CONTAINING_NAMING)) {
             $word = str_replace('$', '', $token->content);
-            if( $this->resembleConstant($token)) {
+            if ($this->resembleConstant($token)) {
                 return true;
             }
             if (strpos($token->content, '_') !== false) {
@@ -219,7 +223,7 @@ class TokenAnalyser{
     }
 
     private function resembleConstant($token){
-        return mb_strtoupper($token->content)  == $token->content ? true : false ;
+        return mb_strtoupper($token->content) == $token->content ? true : false;
     }
 
     public function checkIfNotSingleLetterVariable($token){
@@ -231,18 +235,50 @@ class TokenAnalyser{
     }
 
     private function checkIfConstNamingConventionFollowed($tokens, $i){
-        if( strtoupper($tokens[$i]->content) != $tokens[$i]->content ){
+        if (strtoupper($tokens[$i]->content) != $tokens[$i]->content) {
             $tokens[$i]->tokenMessage .= Rules::CONST_NAMING_CONVENTION_WARNING;
         }
     }
 
     private function checkIfFunctionFollowsNamingConvention($tokens, $i){
-        if( !$this->checkIfCamelCaseConventionFollowed($tokens[$i]) ){
+        if (!$this->checkIfCamelCaseConventionFollowed($tokens[$i])) {
             $tokens[$i]->tokenMessage .= Rules::METHOD_NAMING_CONVENTION;
         }
     }
 
     private function resembleStaticObjectCall(Token $stringToken, Token $nextToken){
         return $stringToken->tokenIdentifier == T_STRING && $nextToken->tokenIdentifier == T_DOUBLE_COLON ? true : false;
+    }
+
+    private function isObjectCall($tokens, Token $token, $i){
+        if ($token->tokenIdentifier == T_STRING) {
+            $counter = $i;
+            do {
+                $counter++;
+            }while($tokens[$counter]->tokenIdentifier == T_WHITESPACE);
+
+            $result = [
+                Token::BRACKET_OPEN => 0,
+                T_NEW => 0,
+            ];
+
+            if ($tokens[$counter]->tokenIdentifier == Token::BRACKET_OPEN) {
+                $result[Token::BRACKET_OPEN] = 1;
+            }
+
+            $counter = $i;
+            do {
+                $counter--;
+            }while($tokens[$counter]->tokenIdentifier == T_WHITESPACE);
+
+            if( $tokens[$counter]->tokenIdentifier == T_NEW ){
+                $result[T_NEW] = 1;
+            }
+
+            if( $result[Token::BRACKET_OPEN] == 1 &&  $result[T_NEW] == 1 ){
+                return true;
+            }
+        }
+        return false;
     }
 }

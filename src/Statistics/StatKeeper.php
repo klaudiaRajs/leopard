@@ -33,8 +33,8 @@ class StatKeeper{
         return $fileWithPath;
     }
 
-    public function saveSimilarity($similarityResults){
-        $fileWithPath = __DIR__ . "/../../stats/similarity-" . date('Ymdhis');
+    public function saveSimilarity($similarityResults, $fileName){
+        $fileWithPath = __DIR__ . "/../../stats/similarity-" . uniqid() . '-' . $fileName;
         file_put_contents($fileWithPath, json_encode($similarityResults));
         return $fileWithPath;
     }

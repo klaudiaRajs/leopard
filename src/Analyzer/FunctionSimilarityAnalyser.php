@@ -8,9 +8,13 @@ use MyApp\Statistics\StatKeeper;
 
 class FunctionSimilarityAnalyser{
 
-    public function checkFunctionStringSimilarity(array $tokens, StatKeeper $statKeeper){
+    public function checkFunctionStringSimilarity(array $tokens, StatKeeper $statKeeper, $fileName){
 
         $tokensPerFunction = $this->divideTokensIntoFunctions($tokens);
+        if( count($tokensPerFunction) < 2 ){
+            $statKeeper->saveSimilarity("This file does not have enough functions for this comparison", $fileName);
+            return $tokens;
+        }
 
         $textSimilaritiesPerFunction = $this->analyzeTextSimilarityWithOptionToAbstract($tokensPerFunction);
         $parametersPassedSimilarity = $this->analyzeGroupOfTokenSimilarity($this->getParamsPerFunction($tokensPerFunction, $tokens));
@@ -35,7 +39,7 @@ class FunctionSimilarityAnalyser{
             }
         }
 
-        $statKeeper->saveSimilarity($finalResult);
+        $statKeeper->saveSimilarity($finalResult, $fileName);
         return $tokens;
     }
 
