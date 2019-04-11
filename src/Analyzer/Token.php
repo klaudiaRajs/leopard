@@ -24,6 +24,7 @@ class Token {
     const MULTIPLICATION = '*';
     const MINUS = '-';
     const AMPERSAND = '&';
+    const BACKSLASH = '\\';
 
 	public $tokenHash;
     public $tokenIdentifier;
