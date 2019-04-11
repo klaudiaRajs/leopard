@@ -40,6 +40,7 @@ class Tokenizer{
             '<' => Token::SMALLER,
             '>' => Token::BIGGER,
             '/' => Token::DIVISION,
+            '\\' => Token::BACKSLASH,
             '+' => Token::ADD,
             '*' => Token::MULTIPLICATION,
             '-' => Token::MINUS,
