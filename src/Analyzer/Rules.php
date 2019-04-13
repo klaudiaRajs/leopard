@@ -5,10 +5,10 @@ namespace MyApp\Analyzer;
 class Rules {
     private static $convention;
 
-	const MAX_PARAMS = 3;
+	const MAX_PARAMS = 4;
 	const FUNCTION_LENGTH = 30;
 	const CLASS_LENGTH = 250;
-	const LINE_LENGTH = 150;
+	const LINE_LENGTH = 120;
 	const REPEATED_STRING_THRESHOLD = 15;
 	const LOOP_LENGTH = 50;
 	const SIMILARITY_THRESHOLD = 30;
@@ -34,6 +34,10 @@ class Rules {
 	const TOKENS_CONTAINING_NAMING = [
 		'T_STRING', 'T_VARIABLE'
 	];
+
+	const PRIMITIVE_TYPES = [
+	  'int', 'string', 'float', 'bool', 'array'
+    ];
 
 	public static function deprecated()
     {

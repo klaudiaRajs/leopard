@@ -2,18 +2,12 @@
 
 namespace MyApp\Analyzer;
 
-use MyApp\Statistics\StatKeeper;
-
 class Tokenizer{
     /** @var token[] */
     private $tokens;
-    private $statKeeper;
-    private $fileName;
 
-    public function __construct($fileContents, $fileName, StatKeeper $statKeeper){
+    public function __construct($fileContents){
         $unifiedContents = str_replace("\r", '', $fileContents);
-        $this->statKeeper = $statKeeper;
-        $this->fileName = $fileName;
         $this->parse($unifiedContents);
     }
 
@@ -64,33 +58,5 @@ class Tokenizer{
                 exit;
             }
         }
-    }
-
-    public function getTokenMessages($tokens, $introducedProblems){
-
-        $tokenAnalyzer = new TokenAnalyser($this->statKeeper, $this->fileName, $introducedProblems);
-        $structureAnalyzer = new StructureAnalyser($this->statKeeper, $this->fileName, $introducedProblems);
-
-        $tokens = $structureAnalyzer->isTooLongStructure($tokens, 'T_FOREACH', Rules::LOOP_LENGTH);
-        $tokens = $structureAnalyzer->isTooLongStructure($tokens, 'T_FOR', Rules::LOOP_LENGTH);
-
-        for ($i = 0; $i < count($tokens); $i++) {
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->containsStatics($tokens[$i]);
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->containsDeprecated($tokens[$i]);
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->containsGlobal($tokens[$i]);
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->containsUnusedVariables($i, $tokens[$i], $tokens);
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->checkIfNamingConventionFollowed($tokens[$i], $tokens, $i);
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->checkIfNotSingleLetterVariable($tokens[$i]);
-        }
-
-        $tokens = $structureAnalyzer->isTooLongStructure($tokens, 'T_FUNCTION', Rules::FUNCTION_LENGTH);
-        $tokens = $structureAnalyzer->isTooLongStructure($tokens, 'T_CLASS', Rules::CLASS_LENGTH);
-        $tokens = $structureAnalyzer->areLinesTooLong($tokens, Rules::LINE_LENGTH);
-        $tokens = $structureAnalyzer->longestRepeatedTokenChain($tokens, Rules::REPEATED_STRING_THRESHOLD);
-        $tokens = $structureAnalyzer->identifyFunctionSimilarities($tokens);
-        $tokens = $structureAnalyzer->hasFunctionTooManyParameters($tokens);
-        $tokens = $structureAnalyzer->findUnusedMethods($tokens);
-
-        return $tokens;
     }
 }
