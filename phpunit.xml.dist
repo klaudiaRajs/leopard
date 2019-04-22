@@ -15,4 +15,15 @@
             <directory>./tests/</directory>
         </testsuite>
     </testsuites>
+    <filter>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php">./src</directory>
+            <exclude>
+                <directory>C:/xampp/htdocs/projects/LeopardSlim/vendor</directory>
+            </exclude>
+        </whitelist>
+        <blacklist>
+            <directory suffix=".php">vendor</directory>
+        </blacklist>
+    </filter>
 </phpunit>
