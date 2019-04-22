@@ -3,35 +3,31 @@
 
 namespace MyApp\Analyzer;
 
-use function Couchbase\basicDecoderV1;
+use MyApp\Helpers\GeneralHelper;
 use MyApp\Statistics\StatKeeper;
 
 class FunctionSimilarityAnalyser{
 
-    public function checkFunctionStringSimilarity(array $tokens, StatKeeper $statKeeper, $fileName){
-
+    public function checkFunctionStringSimilarity(array $tokens){
         $tokensPerFunction = $this->divideTokensIntoFunctions($tokens);
         if( count($tokensPerFunction) < 2 ){
-            $statKeeper->saveSimilarity("This file does not have enough functions for this comparison", $fileName);
+            StatKeeper::saveSimilarity("This file does not have enough functions for this comparison", StatKeeper::$currentFile);
             return $tokens;
         }
 
         $textSimilaritiesPerFunction = $this->analyzeTextSimilarityWithOptionToAbstract($tokensPerFunction);
-        $parametersPassedSimilarity = $this->analyzeGroupOfTokenSimilarity($this->getParamsPerFunction($tokensPerFunction, $tokens));
         $returnVariablesSimilarity = $this->analyzeGroupOfTokenSimilarity($this->getReturnTokensPerFunction($tokensPerFunction));
         $abstractedTextSimilarity = $this->analyzeTextSimilarityWithOptionToAbstract($tokensPerFunction, true); //abstract variables
 
         $finalResult = [];
-        $finalResult = $this->getOrderedResult($textSimilaritiesPerFunction, 'pureTextSimilarity', $finalResult);
-        $finalResult = $this->getOrderedResult($parametersPassedSimilarity, 'paramSimilarity', $finalResult);
-        $finalResult = $this->getOrderedResult($returnVariablesSimilarity, 'returns', $finalResult);
-        $finalResult = $this->getOrderedResult($abstractedTextSimilarity, 'abstractedText', $finalResult);
-
+        $finalResult = GeneralHelper::getOrderedResult($textSimilaritiesPerFunction, 'pureTextSimilarity', $finalResult);
+        $finalResult = GeneralHelper::getOrderedResult($returnVariablesSimilarity, 'returns', $finalResult);
+        $finalResult = GeneralHelper::getOrderedResult($abstractedTextSimilarity, 'abstractedText', $finalResult);
 
         foreach ($finalResult as $function => $comparedFunction) {
             foreach ($comparedFunction as $nestedFunction => $metrics) {
-                $sum = $this->getSumOfPercentageResults($metrics);
-                $average = round($this->getAverage($sum, count($metrics)), 2);
+                $sum = GeneralHelper::getSumOfPercentageResults($metrics);
+                $average = round(GeneralHelper::getAverage($sum, count($metrics)), 2);
                 $finalResult[$function][$nestedFunction]['average'] = $average;
                 if ($average > Rules::SIMILARITY_THRESHOLD) {
                     $tokens = $this->markTokensAsSimilar($tokens, $tokensPerFunction, $function, $nestedFunction, $average);
@@ -39,32 +35,10 @@ class FunctionSimilarityAnalyser{
             }
         }
 
-        $statKeeper->saveSimilarity($finalResult, $fileName);
+        StatKeeper::saveSimilarity($finalResult);
         return $tokens;
     }
 
-    private function getAverage($sum, $numberOfMetrics){
-        return $sum / $numberOfMetrics;
-    }
-
-    private function getSumOfPercentageResults(array $metrics){
-        $sum = 0.0;
-        foreach ($metrics as $similarity) {
-            $sum += $similarity;
-        }
-        return $sum;
-    }
-
-    private function getOrderedResult(array $unorderedResult, string $desc, array $finalResult){
-        foreach ($unorderedResult as $function => $otherFunctions) {
-            foreach ($otherFunctions as $nestedFunction => $similarity) {
-                if (!isset($finalResult[$nestedFunction][$function])) {
-                    $finalResult[$function][$nestedFunction][$desc] = $similarity;
-                }
-            }
-        }
-        return $finalResult;
-    }
 
     private function getReturnTokensPerFunction($tokensPerFunction){
         $returnedTokens = [];
@@ -116,7 +90,7 @@ class FunctionSimilarityAnalyser{
 
         $theSameParams = [];
         foreach ($paramsWithExactlyTheSameName as $k => $paramName) {
-            $theSameParams[] = $this->convertIntToCharCode($k);
+            $theSameParams[] = GeneralHelper::convertIntToCharCode($k);
         }
 
         $newParamsA = array_values($theSameParams);
@@ -126,7 +100,7 @@ class FunctionSimilarityAnalyser{
             if (in_array($name, $paramsWithExactlyTheSameName)) {
                 continue;
             }
-            $newParamsA[] = $this->convertIntToCharCode($theSameParamsCount + $idx++);
+            $newParamsA[] = GeneralHelper::convertIntToCharCode($theSameParamsCount + $idx++);
         }
         $paramsACount = count($newParamsA);
         $idx = 0;
@@ -134,62 +108,23 @@ class FunctionSimilarityAnalyser{
             if (in_array($name, $paramsWithExactlyTheSameName)) {
                 continue;
             }
-            $newParamsB[] = $this->convertIntToCharCode($paramsACount + $idx++);
+            $newParamsB[] = GeneralHelper::convertIntToCharCode($paramsACount + $idx++);
         }
 
         similar_text(implode('', $newParamsA), implode('', $newParamsB), $percent);
         return $percent;
     }
 
-    private function convertIntToCharCode($k){
-        $asciiId = $k + 65; //A-Z
-        if ($asciiId > 90) {
-            $asciiId += 7; //move to a-Z
-        }
-        return chr($asciiId);
-    }
-
-    private function getParamsPerFunction($tokensPerFunction, $tokens){
-        $paramsPerFunction = [];
-
-        foreach ($tokensPerFunction as $functionName => $function) {
-            $paramStartIndex = 0;
-            /** @var Token $token */
-            foreach ($function as $token) {
-                if ($token->tokenName == 'bracketOpen') {
-                    $paramStartIndex = $token->tokenHash;
-                    continue;
-                }
-                if ($token->tokenName == 'bracketClose') {
-                    $paramsPerFunction[$functionName] = $this->extractParams($tokens, $paramStartIndex, $token->tokenHash);
-                    break;
-                }
-            }
-        }
-        return $paramsPerFunction;
-    }
-
-    private function extractParams($tokens, $paramListStart, $paramListEnd){
-
-        $params = [];
-        for ($i = $paramListStart; $i <= $paramListEnd; $i++) {
-            if ($tokens[$i]->tokenIdentifier == T_VARIABLE) {
-                $params[] = $tokens[$i];
-            }
-        }
-        return $params;
-    }
-
     private function analyzeTextSimilarityWithOptionToAbstract($tokensPerFunction, $abstracted = false){
         $result = [];
 
         foreach ($tokensPerFunction as $firstFunction => $function) {
-            $tokensToOperateOn = $abstracted ? $this->changeFunctionToString($this->getModifiedTokens($function)) : $this->changeFunctionToString($function);
+            $tokensToOperateOn = $abstracted ? GeneralHelper::changeFunctionToString($this->getModifiedTokens($function)) : GeneralHelper::changeFunctionToString($function);
             foreach ($tokensPerFunction as $functionName => $function_) {
                 if ($firstFunction == $functionName) {
                     continue;
                 }
-                $functionAsString = $abstracted ? $this->changeFunctionToString($this->getModifiedTokens($function_)) : $this->changeFunctionToString($function_);
+                $functionAsString = $abstracted ? GeneralHelper::changeFunctionToString($this->getModifiedTokens($function_)) : GeneralHelper::changeFunctionToString($function_);
                 similar_text($tokensToOperateOn, $functionAsString, $similarity);
                 $result[$firstFunction][$functionName] = $similarity;
             }
@@ -217,15 +152,6 @@ class FunctionSimilarityAnalyser{
         return $tokensPerFunction;
     }
 
-    private function changeFunctionToString(array $function){
-        $functionAsString = '';
-        /** @var Token $token */
-        foreach ($function as $token) {
-            $functionAsString .= $token->content . ' ';
-        }
-        return $functionAsString;
-    }
-
     private function getModifiedTokens(array $tokensPerFunction){
         $temp = $tokensPerFunction;
         $modifiedTokens = [];
@@ -243,13 +169,13 @@ class FunctionSimilarityAnalyser{
     }
 
     private function markTokensAsSimilar(array $originTokens, array $tokensPerFunction, $function, $nestedFunction, $average){
-
-        $firstFunctionTokenId = $tokensPerFunction[$function][0]->tokenHash;
-        $secondFunctionTokenId = $tokensPerFunction[$nestedFunction][0]->tokenHash;
-
-        $originTokens[$firstFunctionTokenId]->tokenMessage .= Rules::SIMILAR_CHUNK_OF_CODE_WARNING . $nestedFunction . ' by: ' . $average . "\n";
-        $originTokens[$secondFunctionTokenId]->tokenMessage .= Rules::SIMILAR_CHUNK_OF_CODE_WARNING . $function . ' by: ' . $average . "\n";
-
+        if( $average >= Rules::SIMILARITY_THRESHOLD ){
+            $firstFunctionTokenId = $tokensPerFunction[$function][0]->tokenHash;
+            $secondFunctionTokenId = $tokensPerFunction[$nestedFunction][0]->tokenHash;
+            $originTokens[$firstFunctionTokenId]->tokenMessage .= Rules::SIMILAR_CHUNK_OF_CODE_WARNING . $nestedFunction . ' by: ' . $average . "\n";
+            $originTokens[$secondFunctionTokenId]->tokenMessage .= Rules::SIMILAR_CHUNK_OF_CODE_WARNING . $function . ' by: ' . $average . "\n";
+            StatKeeper::addProgress(1, Rules::SIMILAR_CHUNK_OF_CODE_WARNING, $originTokens[$secondFunctionTokenId]->lineNumber);
+        }
         return $originTokens;
     }
 }

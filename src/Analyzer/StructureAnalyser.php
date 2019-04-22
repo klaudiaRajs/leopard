@@ -2,47 +2,48 @@
 
 namespace MyApp\Analyzer;
 
+use MyApp\Helpers\TokenHelper;
 use MyApp\Statistics\StatKeeper;
 
 class StructureAnalyser{
 
-    private $statKeeper;
-    private $fileName;
     private $introducedProblems;
+    private $tokens;
+    /** @var TokenHelper $helper */
+    private $helper;
+    /** @var TokenInContextAnalyzer */
+    private $tokensInContext;
 
-    public function __construct(StatKeeper $statKeeper, $fileName, $introducedProblems){
-        $this->statKeeper = $statKeeper;
-        $this->fileName = $fileName;
+    public function __construct($introducedProblems, $tokens, TokenHelper $tokenHelper){
         $this->introducedProblems = $introducedProblems;
+        $this->tokens = $tokens;
+        $this->helper = $tokenHelper;
+        $individualTokenAnalyzer = new IndividualTokenAnalyzer($this->helper);
+        $this->tokensInContext = new TokenInContextAnalyzer($individualTokenAnalyzer, $this->tokens, $this->helper);
     }
 
-    public function isTooLongStructure($tokens, string $type, int $length){
-        $tokens = $this->markTokensAndProgress(Helper::$fileMetaData[$type], $tokens, $length);
-        return $tokens;
-    }
-
-    private function markTokensAndProgress($functionMetadata, $tokens, $length){
-        foreach ($functionMetadata as $data) {
+    public function isTooLongStructure($structureMetadata, int $length){
+        foreach ($structureMetadata as $data) {
             if ($data['end'] - $data['start'] > $length) {
-                $tokens[$data['start-i']]->tokenMessage .= Rules::TOO_LENGTHY_STRUCTURE;
-                $this->statKeeper->addProgress($this->fileName, 1, Rules::TOO_LENGTHY_STRUCTURE, $tokens[$data['start-i']]->lineNumber, $this->introducedProblems);
+                $this->tokens[$data['start-i']]->tokenMessage .= Rules::TOO_LENGTHY_STRUCTURE;
+                StatKeeper::addProgress(1, Rules::TOO_LENGTHY_STRUCTURE, $this->tokens[$data['start-i']]->lineNumber, $this->introducedProblems);
             }
         }
-        return $tokens;
+        return $this->tokens;
     }
 
-    public function areLinesTooLong($tokens, $maxLineLength){
+    public function areLinesTooLong($maxLineLength){
         $tokensForLine = [];
-        foreach ($tokens as $key => $token) {
+        foreach ($this->tokens as $key => $token) {
             $token->tokenKey = $key;
             if ($token->tokenIdentifier == T_WHITESPACE && preg_match('/[\n]+/', $token->content)) {
                 if (!empty($tokensForLine)) {
                     if ($this->isLineTooLong($tokensForLine, $maxLineLength)) {
                         $errorMarked = false;
                         foreach ($tokensForLine as $token_) {
-                            $tokens[$token_->tokenKey]->tokenMessage .= Rules::TOO_LONG_LINE;
+                            $this->tokens[$token_->tokenKey]->tokenMessage .= Rules::TOO_LONG_LINE;
                             if (!$errorMarked) {
-                                $this->statKeeper->addProgress($this->fileName, 1, Rules::TOO_LONG_LINE, $token->lineNumber, $this->introducedProblems);
+                                StatKeeper::addProgress(1, Rules::TOO_LONG_LINE, $token->lineNumber, $this->introducedProblems);
                                 $errorMarked = true;
                             }
                         }
@@ -85,22 +86,22 @@ class StructureAnalyser{
 
             $tokensForLine[] = TokenView::fromToken($token);
         }
-        return $tokens;
+        return $this->tokens;
     }
 
-    public function findUnusedMethods($tokens){
-        for ($i = 0; $i < count($tokens); $i++) {
-            if ($tokens[$i]->tokenIdentifier == T_FUNCTION) {
+    public function findUnusedMethods(){
+        for ($i = 0; $i < count($this->tokens); $i++) {
+            if ($this->tokens[$i]->tokenIdentifier == T_FUNCTION) {
                 $functionNameFound = false;
-                for ($j = $i + 1; $j < count($tokens); $j++) {
-                    if ($tokens[$j]->tokenIdentifier == T_STRING) {
+                for ($j = $i + 1; $j < count($this->tokens); $j++) {
+                    if ($this->tokens[$j]->tokenIdentifier == T_STRING) {
                         $errorMarked = false;
-                        for ($h = $j + 1; $h < count($tokens); $h++) {
-                            if ($tokens[$h]->tokenName == 'bracketOpen') {
-                                $errorMessage = $this->checkIfFunctionUsed($tokens, $j);
-                                $tokens[$j]->tokenMessage .= $errorMessage;
+                        for ($h = $j + 1; $h < count($this->tokens); $h++) {
+                            if ($this->tokens[$h]->tokenName == 'bracketOpen') {
+                                $errorMessage = $this->checkIfFunctionUsed($j);
+                                $this->tokens[$j]->tokenMessage .= $errorMessage;
                                 if ($errorMessage && !$errorMarked) {
-                                    $this->statKeeper->addProgress($this->fileName, 1, $errorMessage, $tokens[$j]->lineNumber, $this->introducedProblems);
+                                    StatKeeper::addProgress(1, $errorMessage, $this->tokens[$j]->lineNumber, $this->introducedProblems);
                                     $errorMarked = true;
                                 }
                                 $functionNameFound = true;
@@ -117,19 +118,19 @@ class StructureAnalyser{
                 }
             }
         }
-        return $tokens;
+        return $this->tokens;
     }
 
-    public function hasFunctionTooManyParameters($tokens){
-        for ($i = 0; $i < count($tokens); $i++) {
-            if ($tokens[$i]->tokenIdentifier == T_FUNCTION) {
-                for ($j = $i + 1; $j < count($tokens); $j++) {
-                    if ($tokens[$j]->tokenIdentifier == T_STRING) {
-                        for ($h = $j + 1; $h < count($tokens); $h++) {
-                            if ($tokens[$h]->tokenName == 'bracketOpen') {
-                                for ($k = $h + 1; $k < count($tokens); $k++) {
-                                    if ($tokens[$k]->tokenName == 'bracketClose') {
-                                        $this->countParams($tokens, $h + 1, $k);
+    public function hasFunctionTooManyParameters(){
+        for ($i = 0; $i < count($this->tokens); $i++) {
+            if ($this->tokens[$i]->tokenIdentifier == T_FUNCTION) {
+                for ($j = $i + 1; $j < count($this->tokens); $j++) {
+                    if ($this->tokens[$j]->tokenIdentifier == T_STRING) {
+                        for ($h = $j + 1; $h < count($this->tokens); $h++) {
+                            if ($this->tokens[$h]->tokenName == 'bracketOpen') {
+                                for ($k = $h + 1; $k < count($this->tokens); $k++) {
+                                    if ($this->tokens[$k]->tokenName == 'bracketClose') {
+                                        $this->countParams($h + 1, $k);
                                         break;
                                     }
                                 }
@@ -140,11 +141,11 @@ class StructureAnalyser{
                 }
             }
         }
-        return $tokens;
+        return $this->tokens;
     }
 
-    public function longestRepeatedTokenChain($tokens, $threshold){
-        $repeatedTokens = (new LongestRepeatedChains())->findAll($tokens, $threshold);
+    public function longestRepeatedTokenChain(){
+        $repeatedTokens = (new LongestRepeatedChains())->findAll($this->tokens, Rules::REPEATED_STRING_THRESHOLD);
         foreach ($repeatedTokens as $repetition) {
             $lowest = null;
             $highest = null;
@@ -157,42 +158,42 @@ class StructureAnalyser{
                 }
             }
             $errorMarked = false;
-            foreach ($tokens as $token) {
+            foreach ($this->tokens as $token) {
                 if ($token->tokenHash >= $lowest && $token->tokenHash <= $highest) {
                     $token->tokenMessage .= Rules::REPEATED_CHUNK_OF_CODE_WARNING;
                     if (!$errorMarked) {
-                        $this->statKeeper->addProgress($this->fileName, 1, Rules::REPEATED_CHUNK_OF_CODE_WARNING, $token->lineNumber, $this->introducedProblems);
+                        StatKeeper::addProgress(1, Rules::REPEATED_CHUNK_OF_CODE_WARNING, $token->lineNumber, $this->introducedProblems);
                         $errorMarked = true;
                     }
                 }
             }
         }
-        return $tokens;
+        return $this->tokens;
     }
 
-    public function identifyFunctionSimilarities($tokens){
+    public function identifyFunctionSimilarities(){
         $similarFunctionAnalyzer = new FunctionSimilarityAnalyser();
 
-        return $similarFunctionAnalyzer->checkFunctionStringSimilarity($tokens, $this->statKeeper, $this->fileName);
+        return $similarFunctionAnalyzer->checkFunctionStringSimilarity($this->tokens);
     }
 
-    private function checkIfFunctionUsed($tokens, int $tokenIndexOfFunctionName){
-        $tokenAnalyzer = new TokenAnalyser($this->statKeeper, $this->fileName, $this->introducedProblems);
-        if ($tokenAnalyzer->isNative($tokens[$tokenIndexOfFunctionName])) {
+    private function checkIfFunctionUsed(int $tokenIndexOfFunctionName){
+        $tokenAnalyzer = new TokenAnalyser($this->introducedProblems, $this->tokens);
+        if ($tokenAnalyzer->isNative($this->tokens[$tokenIndexOfFunctionName])) {
             return null;
         }
 
-        if ($this->isPublicFunction($tokens, $tokenIndexOfFunctionName)) {
+        if ($this->tokensInContext->isPublicFunction($tokenIndexOfFunctionName)) {
             return null;
         }
 
-        foreach ($tokens as $index => $token) {
-            if ($token->content == $tokens[$tokenIndexOfFunctionName]->content && $tokenIndexOfFunctionName !== $index) {
+        foreach ($this->tokens as $index => $token) {
+            if ($token->content == $this->tokens[$tokenIndexOfFunctionName]->content && $tokenIndexOfFunctionName !== $index) {
                 $whitespaceCounter = $index + 1;
-                while($tokens[$whitespaceCounter]->tokenIdentifier == T_WHITESPACE) {
+                while($this->tokens[$whitespaceCounter]->tokenIdentifier == T_WHITESPACE) {
                     $whitespaceCounter++;
                 }
-                if ($tokens[$whitespaceCounter]->tokenName == 'bracketOpen') {
+                if ($this->tokens[$whitespaceCounter]->tokenName == 'bracketOpen') {
                     return null;
                 }
             }
@@ -212,57 +213,51 @@ class StructureAnalyser{
         return true;
     }
 
-    private function countParams($tokens, $h, $k){
+    private function countParams($h, $k){
         $params = 0;
+        $tokensProceedingExcludedParams = [T_FOR, T_FOREACH, T_IF];
+        $previousToken = TokenHelper::getPreviousNonWhitespaceTokenStaticAccess($h - 1, $this->tokens);
+
+        if (in_array($previousToken->tokenIdentifier, $tokensProceedingExcludedParams)) {
+            return;
+        }
+
         for ($i = $h; $i <= $k; $i++) {
-            if ($tokens[$i]->tokenIdentifier == T_VARIABLE) {
+            if ($this->tokens[$i]->tokenIdentifier == T_VARIABLE) {
                 $params++;
             }
         }
         if ($params >= Rules::MAX_PARAMS) {
             $errorMarked = false;
             for ($i = $h; $i <= $k; $i++) {
-                $tokens[$i]->tokenMessage .= Rules::TOO_MANY_PARAMS_WARNING;
-                if (!$errorMarked) {
-                    $this->statKeeper->addProgress($this->fileName, 1, Rules::TOO_MANY_PARAMS_WARNING, $tokens[$i]->lineNumber, $this->introducedProblems);
-                    $errorMarked = true;
+                if (strpos($this->tokens[$i]->tokenMessage, Rules::TOO_MANY_PARAMS_WARNING) === false) {
+                    $this->tokens[$i]->tokenMessage .= Rules::TOO_MANY_PARAMS_WARNING;
+                    if (!$errorMarked) {
+                        StatKeeper::addProgress(1, Rules::TOO_MANY_PARAMS_WARNING, $this->tokens[$i]->lineNumber, $this->introducedProblems);
+                        $errorMarked = true;
+                    }
                 }
             }
         }
     }
 
-    private function isPublicFunction($tokens, int $tokenIndexOfFunctionName){
-        $tokenAnalyzer = new TokenAnalyser($this->statKeeper, $this->fileName, $this->introducedProblems);
-        if ($tokens[$tokenIndexOfFunctionName]->tokenIdentifier == T_STRING) {
-            $previousNonWhiteSpaceToken = $tokenAnalyzer->getPreviousNonWhitespaceToken($tokens, $tokenIndexOfFunctionName);
-
-            if ($previousNonWhiteSpaceToken->tokenIdentifier == T_FUNCTION) {
-                $accessModifierToken = $tokenAnalyzer->getPreviousNonWhitespaceToken($tokens, $previousNonWhiteSpaceToken->tokenHash);
-                if ($accessModifierToken->tokenIdentifier == T_PUBLIC) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    public function markPartOfStructure(){
+        $this->tokens = $this->getTokensPerClass(T_CLASS);
+        $this->tokens = $this->getTokensPerClass(T_FUNCTION);
+        $this->tokens = $this->getTokensPerClass(T_FOREACH);
+        $this->tokens = $this->getTokensPerClass(T_FOR);
+        return $this->tokens;
     }
 
-    public function markPartOfStructure($tokens){
-        $tokens = $this->getTokensPerClass($tokens, T_CLASS);
-        $tokens = $this->getTokensPerClass($tokens, T_FUNCTION);
-        $tokens = $this->getTokensPerClass($tokens, T_FOREACH);
-        $tokens = $this->getTokensPerClass($tokens, T_FOR);
-        return $tokens;
-    }
-
-    private function getTokensPerClass($tokens, $type){
+    private function getTokensPerClass($type){
         $currentClass = null;
         $fileMetadata = [];
         $curlyBracketOpen = 0;
         $curlyBracketClose = 0;
         $counter = 0;
 
-        for ($i = 0; $i < count($tokens); $i++) {
-            if ($tokens[$i]->tokenIdentifier == $type) {
+        for ($i = 0; $i < count($this->tokens); $i++) {
+            if ($this->tokens[$i]->tokenIdentifier == $type) {
 
                 if ($type == T_FOREACH) {
                     $functionMetadata[$counter][$type] = "foreach";
@@ -271,22 +266,22 @@ class StructureAnalyser{
                     $functionMetadata[$counter][$type] = "for";
                 }
 
-                $fileMetadata[$counter]['start'] = $tokens[$i]->lineNumber + 1;
+                $fileMetadata[$counter]['start'] = $this->tokens[$i]->lineNumber + 1;
                 $fileMetadata[$counter]['start-i'] = $i;
 
-                for ($j = $i; $j < count($tokens); $j++) {
-                    if ($tokens[$j]->tokenIdentifier == T_STRING && !isset($fileMetadata[$counter][$type])) {
-                        $fileMetadata[$counter][$type]['name'] = $tokens[$j]->content;
+                for ($j = $i; $j < count($this->tokens); $j++) {
+                    if ($this->tokens[$j]->tokenIdentifier == T_STRING && !isset($fileMetadata[$counter][$type])) {
+                        $fileMetadata[$counter][$type]['name'] = $this->tokens[$j]->content;
                     }
 
-                    if ($tokens[$j]->tokenName == Token::CURLY_BRACKET_OPEN) {
+                    if ($this->tokens[$j]->tokenName == Token::CURLY_BRACKET_OPEN) {
                         $curlyBracketOpen++;
                     }
-                    if ($tokens[$j]->tokenName == Token::CURLY_BRACKET_CLOSE) {
+                    if ($this->tokens[$j]->tokenName == Token::CURLY_BRACKET_CLOSE) {
                         $curlyBracketClose++;
                     }
                     if ($curlyBracketOpen > 0 && $curlyBracketOpen == $curlyBracketClose) {
-                        $fileMetadata[$counter]['end'] = $tokens[$j]->lineNumber;
+                        $fileMetadata[$counter]['end'] = $this->tokens[$j]->lineNumber;
                         $fileMetadata[$counter]['end-i'] = $j;
                         break;
                     }
@@ -300,19 +295,19 @@ class StructureAnalyser{
         foreach ($fileMetadata as $data) {
             for ($i = $data['end-i']; $i >= $data['start-i']; $i--) {
                 if ($type == T_CLASS) {
-                    $tokens[$i]->partOfClass = $data[$type]['name'];
+                    $this->tokens[$i]->partOfClass = $data[$type]['name'];
                 } elseif ($type == T_FUNCTION) {
-                    $tokens[$i]->partOfFunction = $data[$type]['name'];
+                    $this->tokens[$i]->partOfFunction = $data[$type]['name'];
                 } elseif ($type == T_FOREACH) {
-                    $tokens[$i]->partOfForeach = true;
+                    $this->tokens[$i]->partOfForeach = true;
                 } elseif ($type == T_FOR) {
-                    $tokens[$i]->partOfFor = true;
+                    $this->tokens[$i]->partOfFor = true;
                 }
             }
         }
 
-        Helper::$fileMetaData[$type] = $fileMetadata;
+        TokenHelper::$fileMetaData[$type] = $fileMetadata;
 
-        return $tokens;
+        return $this->tokens;
     }
 }

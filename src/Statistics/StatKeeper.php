@@ -6,36 +6,37 @@ namespace MyApp\Statistics;
 
 class StatKeeper{
 
-    private $stats;
+    private static $stats;
+    public static $currentFile;
 
-    public function __construct(){
-        $this->stats = [];
-    }
-
-    public function addProgress(string $file, int $found, string $problem, int $lineNumber, int $introduced = null){
-        if (!key_exists($file, $this->stats)) {
-            $this->stats[$file] = [];
+    public static function addProgress(int $found, string $problem, int $lineNumber, int $introduced = null){
+        if( !self::$stats ){
+            self::$stats = [];
         }
-        if( !isset($this->stats[$file]['found']) ){
-            $this->stats[$file]['found'] = 0;
+
+        if (!key_exists(self::$currentFile, self::$stats)) {
+            self::$stats[self::$currentFile] = [];
+        }
+        if( !isset(self::$stats[self::$currentFile]['found']) ){
+            self::$stats[self::$currentFile]['found'] = 0;
         }
 
         if ($introduced) {
-            $this->stats[$file]['introduced'] = '';
-            $this->stats[$file]['introduced'] = $introduced;
+            self::$stats[self::$currentFile]['introduced'] = '';
+            self::$stats[self::$currentFile]['introduced'] = $introduced;
         }
-        $this->stats[$file]['found'] += $found;
-        $this->stats[$file]['problems'][$problem][] = $lineNumber;
+        self::$stats[self::$currentFile]['found'] += $found;
+        self::$stats[self::$currentFile]['problems'][$problem][] = $lineNumber;
     }
 
-    public function saveProgress(){
+    public static function saveProgress(){
         $fileWithPath = __DIR__ . "/../../stats/" . date('Ymdhis');
 
-        file_put_contents($fileWithPath, json_encode($this->stats));
+        file_put_contents($fileWithPath, json_encode(self::$stats));
         return $fileWithPath;
     }
 
-    public function saveSimilarity($similarityResults, $fileName){
+    public static function saveSimilarity($similarityResults){
         $files = glob(__DIR__ . "\..\..\stats\*");
         if( count($files) > 1 ){
             foreach($files as $file){
@@ -46,7 +47,7 @@ class StatKeeper{
                 }
             }
         }
-        $fileWithPath = __DIR__ . "/../../stats/similarity-" . uniqid() . '-' . $fileName;
+        $fileWithPath = __DIR__ . "/../../stats/similarity-" . uniqid() . '-' . self::$currentFile;
         file_put_contents($fileWithPath, json_encode($similarityResults));
         return $fileWithPath;
     }

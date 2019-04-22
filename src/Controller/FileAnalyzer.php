@@ -3,7 +3,6 @@
 namespace MyApp\Controller;
 
 use MyApp\Analyzer\Rules;
-use MyApp\Analyzer\StructureAnalyser;
 use MyApp\Analyzer\TokenAnalyser;
 use MyApp\Config\Config;
 use MyApp\Statistics\StatKeeper;
@@ -14,12 +13,12 @@ use MyApp\Analyzer\TokenPresenter;
 class FileAnalyzer{
     public $statResultFilePath;
 
-    public function analyzeUpload($fileName, $introduceProblems, StatKeeper $statKeeper, $extraContent = null){
+    public function analyzeUpload($fileName, $introducedProblems, $extraContent = null){
         if( $extraContent ){
             return ViewRenderer::render('CodePresenter', ['fileContents' => $extraContent]);
         }
 
-        if (!$introduceProblems) {
+        if (!$introducedProblems) {
             return ViewRenderer::render('CodePresenter', ['fileContents' => $fileName]);
         }
 
@@ -33,13 +32,12 @@ class FileAnalyzer{
             return $e->getMessage();
         }
 
-
-
         $tokenizer = new Tokenizer($fileContents);
 
         $tokens = $tokenizer->getAll();
 
-        $tokens = $this->getTokenMessages($tokens, $introduceProblems, $statKeeper, $fileName);
+        StatKeeper::$currentFile = $fileName;
+        $tokens = $this->getTokenMessages($tokens, $introducedProblems);
 
         $formattedContents = TokenPresenter::getFormattedContents($tokens);
 
@@ -55,7 +53,7 @@ class FileAnalyzer{
         foreach ($result as $fileName => $fileResult) {
             if (is_array($fileResult)) {
                 $resultSummary .= '<br><br><h5>File: ' . $fileName . ': </h5><br>' .
-                    "This file was prepared to contain <number>" . $fileResult['introduced'] .
+                    "This file was prepared to contain <number>" . (isset($fileResult['introduced']) ?  $fileResult['introduced'] : 1) .
                     '</number> poor programming practices. The algorithm identified <number>' .
                     $fileResult['found'] . '</number>';
             }
@@ -65,33 +63,41 @@ class FileAnalyzer{
         return ViewRenderer::render('ResultSummary', ['resultSummary' => $resultSummary]);
     }
 
-    public function getTokenMessages($tokens, $introducedProblems, StatKeeper $statKeeper, $fileName){
+    public function getTokenMessages($tokens, $introducedProblems){
 
-        $tokenAnalyzer = new TokenAnalyser($statKeeper, $fileName, $introducedProblems);
-        $structureAnalyzer = new StructureAnalyser($statKeeper, $fileName, $introducedProblems);
+        $tokenAnalyzer = new TokenAnalyser($introducedProblems, $tokens);
 
-        $tokens = $structureAnalyzer->markPartOfStructure($tokens);
 
-        $tokens = $structureAnalyzer->isTooLongStructure($tokens, T_FOREACH, Rules::LOOP_LENGTH);
-        $tokens = $structureAnalyzer->isTooLongStructure($tokens, T_FOR, Rules::LOOP_LENGTH);
+        $tokens = $tokenAnalyzer->markPartOfStructure();
+
+        $tokens = $tokenAnalyzer->isTooLongStructure(T_FOREACH, Rules::LOOP_LENGTH);
+        $tokens = $tokenAnalyzer->isTooLongStructure(T_FOR, Rules::LOOP_LENGTH);
 
         for ($i = 0; $i < count($tokens); $i++) {
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->containsStatics($tokens[$i]);
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->containsDeprecated($tokens[$i]);
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->containsGlobal($tokens[$i]);
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->containsUnusedVariables($i, $tokens[$i], $tokens);
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->checkIfNamingConventionFollowed($tokens[$i], $tokens, $i);
-            $tokens[$i]->tokenMessage .= $tokenAnalyzer->checkIfNotSingleLetterVariable($tokens[$i]);
+            $tokens = $this->markContent($tokenAnalyzer->containsStatics($tokens[$i]), $i, $introducedProblems, $tokens);
+            $tokens = $this->markContent($tokenAnalyzer->containsDeprecated($tokens[$i]), $i, $introducedProblems, $tokens);
+            $tokens = $this->markContent($tokenAnalyzer->containsGlobal($tokens[$i]), $i, $introducedProblems, $tokens);
+            $tokens = $this->markContent($tokenAnalyzer->containsUnusedVariables($tokens[$i]), $i, $introducedProblems, $tokens);
+            $tokens = $this->markContent($tokenAnalyzer->checkIfNamingConventionFollowed($tokens[$i]), $i, $introducedProblems, $tokens);
+            $tokens = $this->markContent($tokenAnalyzer->checkIfNotSingleLetterVariable($tokens[$i]), $i, $introducedProblems, $tokens);
         }
 
-        $tokens = $structureAnalyzer->isTooLongStructure($tokens, T_FUNCTION, Rules::FUNCTION_LENGTH);
-        $tokens = $structureAnalyzer->isTooLongStructure($tokens, T_CLASS, Rules::CLASS_LENGTH);
-        $tokens = $structureAnalyzer->areLinesTooLong($tokens, Rules::LINE_LENGTH);
-        $tokens = $structureAnalyzer->longestRepeatedTokenChain($tokens, Rules::REPEATED_STRING_THRESHOLD);
-        $tokens = $structureAnalyzer->identifyFunctionSimilarities($tokens);
-        $tokens = $structureAnalyzer->hasFunctionTooManyParameters($tokens);
-        $tokens = $structureAnalyzer->findUnusedMethods($tokens);
+        $tokens = $tokenAnalyzer->isTooLongStructure(T_FUNCTION, Rules::FUNCTION_LENGTH);
+        $tokens = $tokenAnalyzer->isTooLongStructure(T_CLASS, Rules::CLASS_LENGTH);
+        $tokens = $tokenAnalyzer->areLinesTooLong();
+        $tokens = $tokenAnalyzer->longestRepeatedTokenChain();
+        $tokens = $tokenAnalyzer->identifyFunctionSimilarities();
+        $tokens = $tokenAnalyzer->hasFunctionTooManyParameters();
+        $tokens = $tokenAnalyzer->findUnusedMethods();
 
+        return $tokens;
+    }
+
+    private function markContent($result, $i, $introducedProblems, $tokens){
+        if( $result !== null ){
+            StatKeeper::addProgress(1, $result, $tokens[$i]->lineNumber, $introducedProblems);
+            $tokens[$i]->tokenMessage .= $result;
+        }
         return $tokens;
     }
 }

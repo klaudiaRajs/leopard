@@ -20,7 +20,9 @@
 <body class="p-3 mb-2 text-white bg-secondary">
 <div class="container">
     <div class="row ml-5 mr-5 justify-content-md-center">
+
         <div class="col col-md-auto align-self-start bg-dark p-5 rounded border border-warning  min-width">
+        <p>Please, be aware that this application was a created for research purposes and MUST NOT be used as a source of knowledge or a teaching tool </p>
             <code class="text-light">
                     <?php if (isset($resultSummary)) {
                     echo $resultSummary;

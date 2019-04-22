@@ -86,8 +86,7 @@ class TokenPresenter {
         return $formattedLine;
     }
 
-    private static function getFormattedToken(TokenView $token)
-    {
+    private static function getFormattedToken(TokenView $token)    {
         $keywords = [T_ABSTRACT, 'and', T_ARRAY, T_BREAK, T_CALLABLE, T_CASE, T_CATCH, T_CLASS, T_CLONE, T_CONST,
             T_CONTINUE, T_DECLARE, T_DEFAULT, 'die', T_DO, T_ECHO, T_ELSE, T_ELSEIF, T_EMPTY, T_ENDDECLARE, T_ENDFOR,
             T_ENDFOREACH, T_ENDIF, T_ENDSWITCH, T_ENDWHILE, T_EVAL, T_EXIT, T_EXTENDS, T_FINAL, T_FOR, T_FOREACH,
@@ -134,6 +133,11 @@ class TokenPresenter {
         if ($bold) {
             $style[] = "font-weight: bold";
         }
+
+        if( ctype_space($token->tokenMessage) ){
+            $token->tokenMessage = null;
+        }
+
         if ($token->tokenMessage){
             $style[] = "border-bottom: 1px solid red";
             $style[] = "font-size: 1.1em";

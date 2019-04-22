@@ -11,7 +11,7 @@ class Rules {
 	const LINE_LENGTH = 120;
 	const REPEATED_STRING_THRESHOLD = 15;
 	const LOOP_LENGTH = 50;
-	const SIMILARITY_THRESHOLD = 30;
+	const SIMILARITY_THRESHOLD = 70;
 
 	const METHOD_DEPRECATED_WITH_SUGGEST_WARNING = "This method is deprecated. Suggested: ";
 	const METHOD_DEPRECATED_WARNING = "This method is deprecated. ";
@@ -32,7 +32,7 @@ class Rules {
     const METHOD_NAMING_CONVENTION = "Method should follow PSR-1, which for method names uses camelCase. ";
 
 	const TOKENS_CONTAINING_NAMING = [
-		'T_STRING', 'T_VARIABLE'
+		T_STRING, T_VARIABLE
 	];
 
 	const PRIMITIVE_TYPES = [
@@ -86,7 +86,7 @@ class Rules {
 
 	public static function keyNames(){
     	return [
-    		'__construct', 'self', 'false', 'true', 'null', '$this'
+    		'__construct', 'self', 'false', 'true', 'null', '$this', 'new', 'curl'
 		];
 	}
 

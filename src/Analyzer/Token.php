@@ -25,8 +25,9 @@ class Token {
     const MINUS = '-';
     const AMPERSAND = '&';
     const BACKSLASH = '\\';
+    const END_OF_FILE = "";
 
-	public $tokenHash;
+    public $tokenHash;
     public $tokenIdentifier;
     public $content;
     public $lineNumber;
