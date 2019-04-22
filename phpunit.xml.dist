@@ -19,7 +19,7 @@
         <whitelist processUncoveredFilesFromWhitelist="true">
             <directory suffix=".php">./src</directory>
             <exclude>
-                <directory>C:/xampp/htdocs/projects/LeopardSlim/vendor</directory>
+                <directory></directory>
             </exclude>
         </whitelist>
         <blacklist>
