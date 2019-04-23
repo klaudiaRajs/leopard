@@ -1,8 +1,11 @@
 Leopard (based on Silex)
 ==============================
 The main aim of this project is analyzing PHP file to identify poor programming practices (code smells). 
-The system does not analyze any problems preventing function of the code, only following the recommendations for creating 
+The system does not analyze any problems preventing correct executing of the code, only following the recommendations for creating 
 high quality code. 
+
+The recommendations were obtained during researching literature for professional programmers and academic papers, however, it
+should not be used as a teaching or learning tool. 
 
 # Features
 ## Analysing PHP file to identify potential problems
@@ -14,32 +17,35 @@ Any usage of key word "static" is marked with warning comment.
 ### Length of a structure:
 Structures listed below are checked with regard to their length: 
 
-1. parameter list (5 params)
-2. class (30 lines)
-3. function (10 lines)
+1. parameter list (4 params)
+2. class (250 lines)
+3. function (30 lines)
 4. line (120 columns)
 
 The length of particular structure can be changed directly in the rule set stored
 within the code. 
 
 ### Code repetition
-Any two or more strings that are identical and contain more than **10** tokens 
-are marked with warning
+The system identifies Type-1 Clones (exact copy and paste) and Type-2 Clones (similarity independent from 
+programmer introduced differences such as variable names). 
 ### Unused variables
 Any variable that is used only once within the file is marked with warning as unused. 
 This also includes occurrences as a property of a class. 
 ### Unused methods
-Any method that is used only once within the file is marked with warning as unused. 
-
-Remaining work: ignore when public method within a class. 
+Any method that is used only once within the file is marked with warning as unused. The system ignores when a 
+function has a public access modifier. 
 ### Naming standards
 All variables and methods are checked against one of the naming conventions listed 
-below. Names of namespaces and classes are ignored. Names of constants are checked against 
-constants naming convention (all capitals).
+below. Names of constants are checked against constants naming convention (all capitals).
+Functions and classes are checked using PascalCase convention. The remaining identifiers can be checked against 
+following conventions (chosen when a file for check is added): 
 
 1. camelCase 
 2. PascalCase 
 3. underscore_convention
+
+### Single letter variables 
+The system checks if variables contain at least 2 characters, except when they are a part of for or foreach loop. 
 ### PHP deprecated methods
 Methods are checked against below list of methods identified as deprecated: 
 ```
@@ -76,7 +82,3 @@ This list is not exhausted and will be updated.
 ## Presentation of PHP file 
 1. syntax colouring
 2. representation of found potential problems and suggestions
-
-## Remaining work: 
-1. Identify too long line  within a comment. 
-2. Stop checking if a public method within a class is used, while remaining checking private methods. 
